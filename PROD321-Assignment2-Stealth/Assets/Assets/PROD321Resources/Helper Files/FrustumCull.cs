@@ -168,6 +168,12 @@ public class FrustumCull : MonoBehaviour
 
         // Create a mesh renderer and assign the frustum material to it
         Renderer r = gameObject.AddComponent<MeshRenderer>();
+        if (r)
+        {
+            //Debug.Log($"We have a component: {r}");
+            //Debug.Log($"We have a material: {r.material}");
+        }
+
         r.material = frustumMaterial;
 
         // Populate the visibility spheres array with sphere colliders for all

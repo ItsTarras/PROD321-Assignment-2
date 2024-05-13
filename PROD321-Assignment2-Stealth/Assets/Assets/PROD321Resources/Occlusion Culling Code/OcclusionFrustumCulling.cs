@@ -108,6 +108,16 @@ public class OcclusionFrustumCulling : MonoBehaviour
         // Loop through each occlusion frustum
         foreach (OcclusionFrustum occlusionFrustum in occlusionFrustums)
         {
+            // Calculate the frustum corners
+            Vector3[] frustumCorners = CalculateFrustumCorners(occlusionCamera);
+
+            // Draw debug lines for the frustum bounds
+            
+            for (int i = 0; i < frustumCorners.Length; i++)
+            {
+                Debug.DrawLine(frustumCorners[i], frustumCorners[(i + 1) % frustumCorners.Length], Color.white);
+            }
+
             // Create lists for the frustum's plane's centers and normals
             List<Vector3> transformedFrustumCenters = new List<Vector3>();
             List<Vector3> transformedFrustumNormals = new List<Vector3>();
@@ -179,5 +189,38 @@ public class OcclusionFrustumCulling : MonoBehaviour
                 gameObjectsNotOccluded.Add(gameObjectsToTestForOcclusion[i].gameObject);
             }
         }
+    }
+
+
+    // Function to calculate the frustum corners
+    Vector3[] CalculateFrustumCorners(Camera camera)
+    {
+        Vector3[] frustumCorners = new Vector3[8];
+
+        float nearDist = camera.nearClipPlane;
+        float farDist = camera.farClipPlane;
+        float aspect = camera.aspect;
+        float fov = camera.fieldOfView * 0.5f;
+        float heightNear = 2.0f * Mathf.Tan(fov) * nearDist;
+        float widthNear = heightNear * aspect;
+        float heightFar = 2.0f * Mathf.Tan(fov) * farDist;
+        float widthFar = heightFar * aspect;
+
+        Transform cameraTransform = camera.transform;
+        Vector3 cameraPos = cameraTransform.position;
+        Vector3 cameraForward = cameraTransform.forward;
+        Vector3 cameraRight = cameraTransform.right;
+        Vector3 cameraUp = cameraTransform.up;
+
+        frustumCorners[0] = cameraPos + cameraForward * nearDist - cameraRight * widthNear * 0.5f - cameraUp * heightNear * 0.5f; // Bottom left near
+        frustumCorners[1] = cameraPos + cameraForward * nearDist + cameraRight * widthNear * 0.5f - cameraUp * heightNear * 0.5f; // Bottom right near
+        frustumCorners[2] = cameraPos + cameraForward * nearDist + cameraRight * widthNear * 0.5f + cameraUp * heightNear * 0.5f; // Top right near
+        frustumCorners[3] = cameraPos + cameraForward * nearDist - cameraRight * widthNear * 0.5f + cameraUp * heightNear * 0.5f; // Top left near
+        frustumCorners[4] = cameraPos + cameraForward * farDist - cameraRight * widthFar * 0.5f - cameraUp * heightFar * 0.5f; // Bottom left far
+        frustumCorners[5] = cameraPos + cameraForward * farDist + cameraRight * widthFar * 0.5f - cameraUp * heightFar * 0.5f; // Bottom right far
+        frustumCorners[6] = cameraPos + cameraForward * farDist + cameraRight * widthFar * 0.5f + cameraUp * heightFar * 0.5f; // Top right far
+        frustumCorners[7] = cameraPos + cameraForward * farDist - cameraRight * widthFar * 0.5f + cameraUp * heightFar * 0.5f; // Top left far
+
+        return frustumCorners;
     }
 }

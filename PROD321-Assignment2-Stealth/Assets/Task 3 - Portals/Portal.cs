@@ -40,6 +40,11 @@ public class Portal : MonoBehaviour
         // Set it's position and rotation to the identity
         frustumGO.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
 
+        if(frustumGO)
+        {
+            //Debug.Log("WE HAVE A FRUSTUM");
+
+        }
         // Get the mesh filter of this portal
         MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>();
 
@@ -61,9 +66,13 @@ public class Portal : MonoBehaviour
     public void HideFrustum()
     {
         // Get our frustum's mesh renderer
-        MeshRenderer mr = frustumGO.GetComponent<MeshRenderer>();
-        // If it exists, disable it
-        if (mr != null) mr.enabled = false;
+        if(frustumGO)
+        {
+            MeshRenderer mr = frustumGO.GetComponent<MeshRenderer>();
+            // If it exists, disable it
+            if (mr != null) mr.enabled = false;
+        }
+        
     }
 
     // Get an updated frustum for this portal

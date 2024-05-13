@@ -18,10 +18,10 @@ public class BasicCameraController : MonoBehaviour
     private List<FrustumCull> frustumCulls = new List<FrustumCull>();
 
     // Reference to the Occlusion Cull Script
-    public OcclusionFrustumCulling occlusionCull;
+    public List<OcclusionFrustumCulling> occlusionCulls = new List<OcclusionFrustumCulling>();
 
     private List<GameObject> enemies = new List<GameObject>();
-
+    
     // Define the speed of movement and rotation
     public float moveSpeed = 10;
     public float turnSpeed = 1500;
@@ -38,7 +38,7 @@ public class BasicCameraController : MonoBehaviour
             enemies.Add(enemy);
         }
 
-        Debug.Log(enemyObjects.Length);
+        //Debug.Log(enemyObjects.Length);
     }
 
     // Update is called once per frame
@@ -68,27 +68,28 @@ public class BasicCameraController : MonoBehaviour
         {
 
             FrustumCull frustumCull = enemy.GetComponentInChildren<FrustumCull>();
-            Debug.Log(!(frustumCull == null));
+            OcclusionFrustumCulling occlusionCull = enemy.GetComponentInChildren<OcclusionFrustumCulling>();
+            //Debug.Log(!(frustumCull == null));
 
-            Debug.Log(occlusionCull);
+            //Debug.Log(occlusionCulls);
             //If it's in both, kill character.
             if (frustumCull.gameObjectsInFrustum.Contains(this.gameObject) && occlusionCull.gameObjectsNotOccluded.Contains(this.gameObject))
             {
-                Debug.Log("FOUND YOU!");
+                Debug.Log(enemy.name + "FOUND YOU!");
             }
             //If it's only in the frustumCull, set its colour to magenta.
             else if (frustumCull.gameObjectsInFrustum.Contains(this.gameObject))
             {
-                Debug.Log("Blocked by wall");
+                Debug.Log(enemy.name + "Blocked by wall");
             }
             //If it's only in the occlusionCull
             else if (occlusionCull.gameObjectsNotOccluded.Contains(this.gameObject))
             {
-                Debug.Log("Can't see him.");
+                Debug.Log(enemy.name + "Can't see him.");
             }
             else if (!frustumCull.gameObjectsInFrustum.Contains(this.gameObject) && !occlusionCull.gameObjectsNotOccluded.Contains(this.gameObject))
             {
-                Debug.Log("Can't see you.");
+                Debug.Log(enemy.name + "Can't see you.");
             }
         }
 
