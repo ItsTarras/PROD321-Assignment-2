@@ -85,12 +85,15 @@ public class OcclusionFrustumCulling : MonoBehaviour
         // Loop through all our occlusion objects
         foreach (MeshFilter occlusionObject in occlusionObjects)
         {
-            // Get the Occlusion Frustum on this object
-            OcclusionFrustum occlusionFrustum = occlusionObject.gameObject.GetComponent<OcclusionFrustum>();
-            // If there is none, add an occlusion frustum to it
-            if (occlusionFrustum == null) occlusionFrustum = occlusionObject.gameObject.AddComponent<OcclusionFrustum>();
-            // Add this occlusion frustum to our list of occlusion frustums
-            occlusionFrustums.Add(occlusionFrustum);
+            if (occlusionObject != null)
+            {
+                // Get the Occlusion Frustum on this object
+                OcclusionFrustum occlusionFrustum = occlusionObject.gameObject.GetComponent<OcclusionFrustum>();
+                // If there is none, add an occlusion frustum to it
+                if (occlusionFrustum == null) occlusionFrustum = occlusionObject.gameObject.AddComponent<OcclusionFrustum>();
+                // Add this occlusion frustum to our list of occlusion frustums
+                occlusionFrustums.Add(occlusionFrustum);
+            }
         }
     }
 
@@ -111,8 +114,12 @@ public class OcclusionFrustumCulling : MonoBehaviour
             // Calculate the frustum corners
             Vector3[] frustumCorners = CalculateFrustumCorners(occlusionCamera);
 
+
+            //Check the occlusionFrustums, and if they are in our camera.
+
+
             // Draw debug lines for the frustum bounds
-            
+
             for (int i = 0; i < frustumCorners.Length; i++)
             {
                 Debug.DrawLine(frustumCorners[i], frustumCorners[(i + 1) % frustumCorners.Length], Color.white);
@@ -138,6 +145,8 @@ public class OcclusionFrustumCulling : MonoBehaviour
 
                 // Get the position of this objects bounding sphere
                 Vector3 spherePos = visibleObjects[i].transform.position;
+
+
                 // Calculate the radius of the object's bounding sphere
                 float bounds = visibleObjects[i].radius * visibleObjects[i].transform.localScale.x;
 
@@ -176,21 +185,38 @@ public class OcclusionFrustumCulling : MonoBehaviour
         // Loop through each game object we're testing
         for (int i = 0; i < gameObjectsToTestForOcclusion.Length; i++)
         {
-            // Get its visibility sphere
+            int frustumsLayerMask = 1 << LayerMask.NameToLayer("Frustums");
+            int layerMask = ~frustumsLayerMask;
+
+            // Get the game object and its visibility sphere
+            GameObject GO = gameObjectsToTestForOcclusion[i].gameObject;
             SphereCollider sphereCollider = visibilitySpheres[i].GetComponent<SphereCollider>();
 
-            // Get the visibility sphere's mesh renderer
-            MeshRenderer mr = sphereCollider.GetComponent<MeshRenderer>();
+            // Perform occlusion test
+            // Get the object's bounds
+            Bounds bounds = sphereCollider.bounds;
 
-            // if the visiblity sphere is a visible object
-            if (visibleObjects.Contains(sphereCollider))
+            // Check if the object's bounds are within the camera's view frustum
+            if (GeometryUtility.TestPlanesAABB(GeometryUtility.CalculateFrustumPlanes(occlusionCamera), bounds))
             {
-                // Add this object to the game objects in frustum list
-                gameObjectsNotOccluded.Add(gameObjectsToTestForOcclusion[i].gameObject);
+                // Perform a raycast from the camera towards the object's position
+                Vector3 direction = GO.transform.position - occlusionCamera.transform.position;
+                RaycastHit hit;
+                Debug.DrawLine(occlusionCamera.transform.position, GO.transform.position, Color.red);
+                Debug.Log("Character in bounds of camera.");
+
+                if (Physics.Raycast(occlusionCamera.transform.position, direction, out hit, Mathf.Infinity))
+                {
+                    Debug.Log("We hit object: " + hit.collider.gameObject.name);
+                    if (hit.collider.gameObject.GetComponent<SphereCollider>() != null || hit.collider.gameObject == GO || hit.collider.gameObject == sphereCollider.gameObject)
+                    {
+                        Debug.Log("Added to list");
+                        gameObjectsNotOccluded.Add(GO);
+                    }
+                }
             }
         }
     }
-
 
     // Function to calculate the frustum corners
     Vector3[] CalculateFrustumCorners(Camera camera)

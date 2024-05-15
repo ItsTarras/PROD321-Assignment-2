@@ -273,6 +273,11 @@ public class OcclusionFrustum : MonoBehaviour
     // occluding object at this frame, relevant to the camera position
     public void CalcFrustum(Camera visibilityTestingCamera, ref List<Vector3> transformedFrustumCenters, ref List<Vector3> transformedFrustumNormals)
     {
+        // Clear existing data
+        transformedFrustumCenters.Clear();
+        transformedFrustumNormals.Clear();
+
+
         // A list for the occluding object's frustums vertices and triangles
         List<Vector3> frustumVertices = new List<Vector3>();
         List<int> frustumTriangles = new List<int>();
@@ -280,63 +285,45 @@ public class OcclusionFrustum : MonoBehaviour
         // The current camera position
         Vector3 cameraPos = visibilityTestingCamera.transform.position;
 
-        // Loop through each of our potential outer edges
         foreach (SharedEdge edge in outerEdges)
         {
-            // Get the first two triangles which share the edge, and transform
-            // their centers and normals from model space to world space
+            // Get vertices and normals in model space
+            Vector3 v1 = edge.v1;
+            Vector3 v2 = edge.v2;
+            Vector3 n1 = edge.triNormals[0];
+            Vector3 n2 = edge.triNormals[1];
+
+            // Transform vertices and normals to world space
             Vector3 c1 = occludingObjectMeshFilter.transform.TransformPoint(edge.triCenters[0]);
             Vector3 c2 = occludingObjectMeshFilter.transform.TransformPoint(edge.triCenters[1]);
-            Vector3 n1 = occludingObjectMeshFilter.transform.TransformDirection(edge.triNormals[0]);
-            Vector3 n2 = occludingObjectMeshFilter.transform.TransformDirection(edge.triNormals[1]);
+            Vector3 worldV1 = occludingObjectMeshFilter.transform.TransformPoint(v1);
+            Vector3 worldV2 = occludingObjectMeshFilter.transform.TransformPoint(v2);
+            Vector3 worldN1 = occludingObjectMeshFilter.transform.TransformDirection(n1);
+            Vector3 worldN2 = occludingObjectMeshFilter.transform.TransformDirection(n2);
 
-            // Calculate the dot products of the vector between the camera
-            // and the two triangle centers and the triangle normals
-            // These dot products will be negative if they face the camera
-            // and positive or zero if they're facing away from the camera
-            float cn1 = Vector3.Dot(c1 - cameraPos, n1);
-            float cn2 = Vector3.Dot(c2 - cameraPos, n2);
+            // Calculate dot products to determine visibility
+            float cn1 = Vector3.Dot(c1 - cameraPos, worldN1);
+            float cn2 = Vector3.Dot(c2 - cameraPos, worldN2);
 
-            // If one triangle of an edge is facing the camera, and one is
-            // facing away from the camera, then this will be a silhouette edge
-            // (we can see a triangle on one side of the edge, but not the other)
-            // it doesn't matter which triangle faces towards and which is away
-            if ((cn1 < 0 && cn2 >= 0) || (cn2 <0 && cn1 >=0) )
+            // Check visibility and update frustum
+            if ((cn1 < 0 && cn2 >= 0) || (cn2 < 0 && cn1 >= 0))
             {
-                // Transform the vertices of the edge from model space to world
-                // Space
-                Vector3 v1 = occludingObjectMeshFilter.transform.TransformPoint(edge.v1);
-                Vector3 v2 = occludingObjectMeshFilter.transform.TransformPoint(edge.v2);
-
-                // Create a frustum plane using these two vertices, updating
-                // the frustumVertices, frustumTriangles, transformedFrustumCenters
-                // and transformedFrustumNormals as we do
-                CreateFrustumPlane(v1, v2, visibilityTestingCamera, ref frustumVertices, ref frustumTriangles, ref transformedFrustumCenters, ref transformedFrustumNormals);
-
-                // Calculate the center of the edge
-                Vector3 vC = (v1 + v2) / 2;
-
-                // Draw a line between the two vertices
-                Debug.DrawLine(v1, v2, Color.black);
-                // Draw two normals from the center of the edge pointing
-                // the direction of the two triangle normals
-                Debug.DrawRay(vC, n1, Color.red);
-                Debug.DrawRay(vC, n2, Color.blue);
+                // Create frustum plane
+                CreateFrustumPlane(worldV1, worldV2, visibilityTestingCamera, ref frustumVertices, ref frustumTriangles, ref transformedFrustumCenters, ref transformedFrustumNormals);
             }
+
+            // Destroy the existing mesh filter mesh
+            Destroy(frustumMeshFilter.mesh);
+
+            // Create a new mesh and populate it with our occluding object's
+            // frustum's vertices and triangles
+            Mesh mesh = new Mesh();
+            mesh.vertices = frustumVertices.ToArray();
+            mesh.triangles = frustumTriangles.ToArray();
+
+            // set our frustums mesh filter to use this new mesh
+            frustumMeshFilter.mesh = mesh;
         }
-
-        // Destroy the existing mesh filter mesh
-        Destroy(frustumMeshFilter.mesh);
-
-        // Create a new mesh and populate it with our occluding object's
-        // frustum's vertices and triangles
-        Mesh mesh = new Mesh();
-        mesh.vertices = frustumVertices.ToArray();
-        mesh.triangles = frustumTriangles.ToArray();
-
-        // set our frustums mesh filter to use this new mesh
-        frustumMeshFilter.mesh = mesh;
-
     }
 
     // Create a frustum plane using two points and a camera, and update
@@ -392,4 +379,6 @@ public class OcclusionFrustum : MonoBehaviour
         transformedFrustumCenters.Add(frustumRenderer.transform.TransformPoint(planeCenter));
         transformedFrustumNormals.Add(frustumRenderer.transform.TransformDirection(planeNormal));
     }
+
+
 }

@@ -266,6 +266,10 @@ public class Frustum : MonoBehaviour
     // time
     public bool containsPortal(Portal portal)
     {
+
+
+        if (portal.vertices.Count == 0) return false;
+
         // Get an array of the vertices which define the portal
         Vector3[] pv = portal.vertices.ToArray();
 
